@@ -51,31 +51,25 @@ class PoseDetector {
         self.poseDetectionRequest = VNDetectHumanBodyPose3DRequest()
     }
     
-    // MARK: - Public Methods
     func detectPoses(fromVideoAt url: URL) async throws -> [TimestampedPose] {
-        // Load video asset
         let asset = AVAsset(url: url)
         self.videoAsset = asset
         
-        // Create video reader
         let reader = try AVAssetReader(asset: asset)
         
-        // Get video track
         guard let videoTrack = try await asset.loadTracks(withMediaType: .video).first else {
             throw NSError(domain: "PoseDetector", code: 1, userInfo: [NSLocalizedDescriptionKey: "No video track found"])
         }
         
-        // Setup video output configuration
         let outputSettings: [String: Any] = [kCVPixelBufferPixelFormatTypeKey as String: Int(kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange)]
         let readerOutput = AVAssetReaderTrackOutput(track: videoTrack, outputSettings: outputSettings)
         reader.add(readerOutput)
         
-        // Start reading
         reader.startReading()
         
         var timestampedPoses: [TimestampedPose] = []
         
-        // Process each frame
+        // Process video frame-by-frame
         while let sampleBuffer = readerOutput.copyNextSampleBuffer() {
             if let imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) {
                 let timestamp = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
@@ -107,7 +101,7 @@ class PoseDetector {
 }
 
 @main
-struct ProcessVideo {
+struct DetectPoseScript {
     static func main() async {
             // Get command line arguments
         let arguments = CommandLine.arguments
@@ -134,3 +128,37 @@ struct ProcessVideo {
         }
     }
 }
+
+//@main
+//struct DetectPoseScript {
+//    static func main() {
+//        Task {
+//            await execute()
+//        }
+//    }
+//
+//    static func execute() async {
+//        let arguments = CommandLine.arguments
+//        
+//        guard arguments.count == 3 else {
+//            print("Usage: ProcessVideo <input_video_path> <output_file_path>")
+//            return
+//        }
+//        
+//        let inputPath = arguments[1]
+//        let outputPath = arguments[2]
+//        
+//        let detector = PoseDetector()
+//        
+//        do {
+//            print("Processing video...")
+//            let observations = try await detector.detectPoses(fromVideoAt: URL(fileURLWithPath: inputPath))
+//            print("Found \(observations.count) poses")
+//            
+//            try detector.savePoseObservations(observations, to: URL(fileURLWithPath: outputPath))
+//            print("Successfully saved poses to \(outputPath)")
+//        } catch {
+//            print("Error: \(error)")
+//        }
+//    }
+//}
